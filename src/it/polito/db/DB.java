@@ -187,13 +187,25 @@ public class DB {
 			 * a 1). 
 			 * Inserire nella lista una stringa per ogni corso restituito dall'interrogazione. 
 			 * */
+			String query = new String (
+						"SELECT CodCorso, NomeC FROM CORSO WHERE PostiDisponibili > 0"
+					);
+			Statement statement = conn.createStatement();
+			ResultSet rs = statement.executeQuery(query);
+			
+			while (rs.next()){
+				list.add(rs.getString("CodCorso") + " - " + rs.getString("NomeC"));
+			}
 			
 			/* Esempio statico che restituisce sempre gli stessi corsi (fare attenzione 
-			 * al formato usato, ossia "codice_corso - nome_corso")*/
+			 * al formato usato, ossia "codice_corso - nome_corso")
 
 			list.add("101"+" - "+"Corso di fantasia");
 			list.add("21"+" - "+"Corso inventato");
+			*/
 			
+			rs.close();
+			statement.close();
 			
 		} catch (Exception e) {
 			e.printStackTrace();
