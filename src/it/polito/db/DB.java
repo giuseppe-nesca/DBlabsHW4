@@ -7,16 +7,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import oracle.*;
+import sun.nio.cs.ext.ISCII91;
 
 public class DB {
 	
 	/* conn serve per "memorizzare" la connessione verso la base di dati */
 	private Connection conn;
+	private PreparedStatement queryCliente, queryCorsi, insertIscrizione;
 	
 	/*
 	 * Costruttore
@@ -40,10 +44,19 @@ public class DB {
 	 * Ritorna true se la connessione viene aperta con successo, false altrimenti.
 	 */
 	public boolean OpenConnection(){
+		
+		final String queryIscrizione = new String (
+				"INSERT INTO ISCRITTO_CORSO ( CodiceCliente, CodiceCorso, DataIscrizione ) "
+				+ "VALUES ( ? , ? , ?)"
+			);
+		
 		try{
 			/* Aprire la connessione e salvarla nella variabile conn 
 			 * conn= ..... */
 			conn = DriverManager.getConnection("jdbc:oracle:thin:@127.0.0.1:1521:xe","usr","usr");
+			
+			insertIscrizione = conn.prepareStatement(queryIscrizione);
+			
 			return true;
 			
 		} catch(Exception ex){
@@ -232,7 +245,8 @@ public class DB {
 	 * 
 	 * Il metodo ritorna true se l'iscrizione e' avvenuta correttamente, false altrimenti.
 	 */
-	public boolean aggiungiIscrizione(long codCorso,long codCliente){
+	public boolean aggiungiIscrizione(long codCorso,long codCliente){		
+		
 		try {
 			    /* Inserire il codice necessario per 
 			     * 1 - inserire la nuova tupla nella tabella iscritto_corso, ossia quella relativa
@@ -244,13 +258,42 @@ public class DB {
 			     * oppure essere annullate entrambe se una delle due fallisce (vedere 
 			     * i lucidi sulla gestione delle le transazioni in JDBC)
 			     * */ 
-
+			
+				conn.setAutoCommit(false);
+				// aggiungo membro
+				insertIscrizione.setString(1, new String(""+codCliente));
+				insertIscrizione.setString(2, new String(""+codCorso));
+				insertIscrizione.setDate(3, Date.valueOf(LocalDate.now()));
+				int resultIscrizione = insertIscrizione.executeUpdate();
+				//--disponibilita
+				Statement statement = conn.createStatement();
+				ResultSet rs = statement.executeQuery("SELECT POSTIDISPONIBILI FROM CORSO WHERE CODCORSO = " + codCorso);
+				int postiliberi;
+				if(rs.next())
+						postiliberi = rs.getInt("POSTIDISPONIBILI");
+				else{
+					throw new Exception("lettura posti disponibili fallita");
+				}
+				postiliberi--;
+				statement.executeUpdate(
+						"UPDATE CORSO "
+						+ "SET POSTIDISPONIBILI = " + postiliberi
+						+ "WHERE CODCORSO = " + codCorso);	
+				
+				
+				statement.close();
+				conn.commit();
+				conn.setAutoCommit(true);
 				return true;
 		} catch (Exception e) {
-				e.printStackTrace();
-				return false;
+			e.printStackTrace();
+			try{
+				conn.rollback();
+				conn.setAutoCommit(true);
+			}catch(Exception ex){
+				ex.printStackTrace();				}				
+			return false;
 		}
-		
 	}
 	
 	
@@ -259,7 +302,8 @@ public class DB {
 	 */
 	public void CloseConnection(){
 		try {
-			
+			insertIscrizione.close();
+			conn.close();
 			/* Scrivere il pezzo di codice che chiude la connessione con la base di dati */
 		} catch (Exception e) {
 			System.err.println("Errore nel chiudere la connessione con il DB!");
