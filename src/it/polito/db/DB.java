@@ -5,16 +5,11 @@ import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
-import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 
-import oracle.*;
-import sun.nio.cs.ext.ISCII91;
 
 public class DB {
 	
@@ -291,7 +286,8 @@ public class DB {
 				conn.rollback();
 				conn.setAutoCommit(true);
 			}catch(Exception ex){
-				ex.printStackTrace();				}				
+				ex.printStackTrace();
+				}				
 			return false;
 		}
 	}
@@ -302,8 +298,8 @@ public class DB {
 	 */
 	public void CloseConnection(){
 		try {
-			conn.close();
 			/* Scrivere il pezzo di codice che chiude la connessione con la base di dati */
+			conn.close();
 		} catch (Exception e) {
 			System.err.println("Errore nel chiudere la connessione con il DB!");
 		}
