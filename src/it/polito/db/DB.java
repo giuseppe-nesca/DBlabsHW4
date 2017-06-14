@@ -20,7 +20,6 @@ public class DB {
 	
 	/* conn serve per "memorizzare" la connessione verso la base di dati */
 	private Connection conn;
-	private PreparedStatement queryCliente, queryCorsi, insertIscrizione;
 	
 	/*
 	 * Costruttore
@@ -44,19 +43,12 @@ public class DB {
 	 * Ritorna true se la connessione viene aperta con successo, false altrimenti.
 	 */
 	public boolean OpenConnection(){
-		
-		final String queryIscrizione = new String (
-				"INSERT INTO ISCRITTO_CORSO ( CodiceCliente, CodiceCorso, DataIscrizione ) "
-				+ "VALUES ( ? , ? , ?)"
-			);
-		
+			
 		try{
 			/* Aprire la connessione e salvarla nella variabile conn 
 			 * conn= ..... */
 			conn = DriverManager.getConnection("jdbc:oracle:thin:@127.0.0.1:1521:xe","usr","usr");
-			
-			insertIscrizione = conn.prepareStatement(queryIscrizione);
-			
+						
 			return true;
 			
 		} catch(Exception ex){
@@ -247,6 +239,12 @@ public class DB {
 	 */
 	public boolean aggiungiIscrizione(long codCorso,long codCliente){		
 		
+		PreparedStatement insertIscrizione;
+		final String queryIscrizione = new String (
+				"INSERT INTO ISCRITTO_CORSO ( CodiceCliente, CodiceCorso, DataIscrizione ) "
+				+ "VALUES ( ? , ? , ?)"
+			);
+		
 		try {
 			    /* Inserire il codice necessario per 
 			     * 1 - inserire la nuova tupla nella tabella iscritto_corso, ossia quella relativa
@@ -261,10 +259,12 @@ public class DB {
 			
 				conn.setAutoCommit(false);
 				// aggiungo membro
+				insertIscrizione = conn.prepareStatement(queryIscrizione);
 				insertIscrizione.setString(1, new String(""+codCliente));
 				insertIscrizione.setString(2, new String(""+codCorso));
 				insertIscrizione.setDate(3, Date.valueOf(LocalDate.now()));
 				int resultIscrizione = insertIscrizione.executeUpdate();
+				insertIscrizione.close();
 				//--disponibilita
 				Statement statement = conn.createStatement();
 				ResultSet rs = statement.executeQuery("SELECT POSTIDISPONIBILI FROM CORSO WHERE CODCORSO = " + codCorso);
@@ -302,7 +302,6 @@ public class DB {
 	 */
 	public void CloseConnection(){
 		try {
-			insertIscrizione.close();
 			conn.close();
 			/* Scrivere il pezzo di codice che chiude la connessione con la base di dati */
 		} catch (Exception e) {
