@@ -275,7 +275,7 @@ public class DB {
 						+ "SET POSTIDISPONIBILI = " + postiliberi
 						+ "WHERE CODCORSO = " + codCorso);	
 				
-				
+				rs.close();
 				statement.close();
 				conn.commit();
 				conn.setAutoCommit(true);
